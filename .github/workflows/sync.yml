@@ -2,8 +2,8 @@ name: Sync Fork
 
 on:
   schedule:
-    - cron: '0 2 * * *'   # 每天凌晨 2 点运行（UTC 时间）
-  workflow_dispatch:  
+    - cron: '0 * * * *'   # 每小时整点运行（UTC 时间）
+  workflow_dispatch:       # 支持手动触发
 
 jobs:
   sync:
@@ -17,7 +17,7 @@ jobs:
       - name: Sync with upstream
         uses: repo-sync/github-sync@v2
         with:
-          source_repo: "IDA16384/-DEV"   
-          source_branch: "main"          
-          destination_branch: "main"     
+          source_repo: "IDA16384/-DEV"   # 上游仓库
+          source_branch: "main"          # 上游分支
+          destination_branch: "main"     # 你的分支
           github_token: ${{ secrets.GITHUB_TOKEN }}
