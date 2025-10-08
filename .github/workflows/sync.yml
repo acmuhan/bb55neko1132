@@ -1,23 +1,38 @@
-name: Sync Fork
+name: Auto Sync Fork (Hourly)
 
 on:
   schedule:
-    - cron: '0 * * * *'   # 每小时整点运行（UTC 时间）
-  workflow_dispatch:       # 支持手动触发
+    - cron: '0 * * * *'  # 每小时执行一次（UTC 时间）
+  workflow_dispatch:      # 支持手动触发
+  watch:
+    types: [started]      # 点 star 时也触发（可删掉）
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout your fork
         uses: actions/checkout@v4
         with:
           persist-credentials: false
 
-      - name: Sync with upstream
-        uses: repo-sync/github-sync@v2
-        with:
-          source_repo: "IDA16384/-DEV"   # 上游仓库
-          source_branch: "main"          # 上游分支
-          destination_branch: "main"     # 你的分支
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Configure Git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream repository
+        run: |
+          git remote add upstream https://github.com/IDA16384/-DEV.git
+          git fetch upstream
+
+      - name: Merge upstream changes
+        run: |
+          git checkout main || git checkout master
+          git merge upstream/main --allow-unrelated-histories || git merge upstream/master --allow-unrelated-histories || true
+
+      - name: Push changes to your fork
+        run: |
+          git push origin HEAD
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
