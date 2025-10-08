@@ -8,6 +8,7 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout your fork
         uses: actions/checkout@v4
@@ -39,6 +40,7 @@ jobs:
           git checkout ${{ steps.detect.outputs.branch }} || git checkout -b ${{ steps.detect.outputs.branch }}
           git fetch upstream
           git reset --hard upstream/${{ steps.detect.outputs.branch }}
+          
+          # 使用 Token 认证推送
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git push origin ${{ steps.detect.outputs.branch }} --force
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
