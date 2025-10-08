@@ -2,8 +2,8 @@ name: Sync Upstream but Keep SYCL
 
 on:
   schedule:
-    - cron: "0 * * * *"   # 每小时整点同步
-  workflow_dispatch:       # 允许手动触发
+    - cron: "0 * * * *"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -13,37 +13,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout fork repo
       - name: Checkout fork
         uses: actions/checkout@v4
         with:
           ref: main
           persist-credentials: false
 
-      # 2️⃣ Setup Git
       - name: Setup Git
         run: |
           git config --global user.name "MuHanBot"
           git config --global user.email "your_email@example.com"
 
-      # 3️⃣ Clone upstream repo to temp folder
       - name: Clone upstream
         run: |
           git clone --depth=1 https://github.com/IDA16384/-DEV.git temp_upstream
 
-      # 4️⃣ Sync upstream to fork but keep sycl
-      - name: Rsync upstream excluding sycl
+      - name: Rsync upstream excluding sycl and .git
         run: |
-          rsync -av --exclude='sycl/' temp_upstream/ .
+          rsync -av --exclude='sycl/' --exclude='.git/' temp_upstream/ .
 
-      # 5️⃣ Commit changes if any
       - name: Commit changes
         run: |
           git add .
           git commit -m "Sync upstream while keeping sycl" || echo "No changes to commit"
 
-      # 6️⃣ Push changes to main
-      - name: Push to main
+      - name: Push changes
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
