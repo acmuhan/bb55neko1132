@@ -1,11 +1,9 @@
-name: Auto Sync Fork (Hourly)
+name: Auto Sync Fork (Hourly, Safe)
 
 on:
   schedule:
     - cron: '0 * * * *'  # 每小时执行一次（UTC 时间）
-  workflow_dispatch:      # 支持手动触发
-  watch:
-    types: [started]      # 点 star 时也触发（可删掉）
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -16,23 +14,31 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Configure Git identity
+      - name: Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Add upstream repository
+      - name: Setup upstream
         run: |
+          git remote remove upstream || true
           git remote add upstream https://github.com/IDA16384/-DEV.git
           git fetch upstream
 
-      - name: Merge upstream changes
+      - name: Detect main branch
+        id: detect
         run: |
-          git checkout main || git checkout master
-          git merge upstream/main --allow-unrelated-histories || git merge upstream/master --allow-unrelated-histories || true
+          if git show-ref --verify --quiet refs/remotes/upstream/main; then
+            echo "branch=main" >> $GITHUB_OUTPUT
+          else
+            echo "branch=master" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Push changes to your fork
+      - name: Force sync with upstream
         run: |
-          git push origin HEAD
+          git checkout ${{ steps.detect.outputs.branch }} || git checkout -b ${{ steps.detect.outputs.branch }}
+          git fetch upstream
+          git reset --hard upstream/${{ steps.detect.outputs.branch }}
+          git push origin ${{ steps.detect.outputs.branch }} --force
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
