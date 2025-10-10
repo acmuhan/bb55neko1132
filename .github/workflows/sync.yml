@@ -2,8 +2,8 @@ name: Sync Upstream but Keep SYCL
 
 on:
   schedule:
-    - cron: "0 * * * *"
-  workflow_dispatch:
+    - cron: "0 * * * *"   # 每小时执行一次
+  workflow_dispatch:       # 允许手动触发
 
 permissions:
   contents: write
@@ -24,13 +24,17 @@ jobs:
           git config --global user.name "MuHanBot"
           git config --global user.email "your_email@example.com"
 
-      - name: Clone upstream
+      - name: Clone upstream (no git metadata)
         run: |
           git clone --depth=1 https://github.com/IDA16384/-DEV.git temp_upstream
+          rm -rf temp_upstream/.git   # 🔥 删除内部 git 防止被识别成子模块
 
       - name: Rsync upstream excluding sycl and .git
         run: |
           rsync -av --exclude='sycl/' --exclude='.git/' temp_upstream/ .
+
+      - name: Cleanup temp_upstream
+        run: rm -rf temp_upstream
 
       - name: Commit changes
         run: |
