@@ -1,0 +1,28 @@
+name: Cleanup Temp Upstream
+
+on:
+  schedule:
+    - cron: "0 * * * *"  # 每小时执行一次
+  workflow_dispatch:      # 允许手动触发
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Remove cached temp_upstream and submodules
+        run: |
+          git rm -rf --cached temp_upstream || true
+          rm -rf .gitmodules || true
+          git add -A
+          git commit -m "fix: remove temp_upstream submodule reference" || echo "No changes to commit"
+
+      - name: Push changes
+        run: |
+          git push origin main
