@@ -2,47 +2,32 @@ name: Sync Upstream but Keep SYCL
 
 on:
   schedule:
-    - cron: "0 * * * *"   # 每小时执行一次
-  workflow_dispatch:       # 允许手动触发
-
-permissions:
-  contents: write
+    - cron: "0 * * * *" # 每小时执行
+  workflow_dispatch:
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout fork
+      - name: Checkout main branch
         uses: actions/checkout@v4
         with:
           ref: main
-          persist-credentials: false
+          submodules: false  # ✅ 禁用子模块处理
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Git
+      - name: Set up git
         run: |
-          git config --global user.name "MuHanBot"
-          git config --global user.email "your_email@example.com"
+          git config --global user.name "acmuhan"
+          git config --global user.email "acmuhan@users.noreply.github.com"
 
-      - name: Clone upstream (no git metadata)
+      - name: Add upstream and fetch
         run: |
-          git clone --depth=1 https://github.com/IDA16384/-DEV.git temp_upstream
-          rm -rf temp_upstream/.git   # 🔥 删除内部 git 防止被识别成子模块
+          git remote add upstream https://github.com/IDA16384/-DEV.git || true
+          git fetch upstream main
 
-      - name: Rsync upstream excluding sycl and .git
+      - name: Merge upstream but keep SYCL
         run: |
-          rsync -av --exclude='sycl/' --exclude='.git/' temp_upstream/ .
-
-      - name: Cleanup temp_upstream
-        run: rm -rf temp_upstream
-
-      - name: Commit changes
-        run: |
-          git add .
-          git commit -m "Sync upstream while keeping sycl" || echo "No changes to commit"
-
-      - name: Push changes
-        env:
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git push https://x-access-token:${TOKEN}@github.com/acmuhan/bb55neko1132.git main
+          git checkout main
+          git merge upstream/main --no-edit --strategy-option ours --allow-unrelated-histories || true
+          git push origin main
